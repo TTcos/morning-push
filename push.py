@@ -9,123 +9,144 @@ from datetime import datetime
 
 # ======================== 1. 家人车辆配置（限行判断）========================
 family_cars = [
-    {"name": "果果姥爷", "last_digit": "5"},   # 车牌尾号 5
-    {"name": "猪猪",     "last_digit": "0"},   # 车牌尾号 0
+    {"name": "果果姥爷", "last_digit": "6"},   # 车牌尾号 6
+    {"name": "果果爸爸",     "last_digit": "8"},   # 车牌尾号 8
+    {"name": "果果妈妈",     "last_digit": "7"},   # 车牌尾号 7
+    {"name": "果果奶奶",     "last_digit": "0"},   # 车牌尾号 0
     # 可继续添加，格式如上
 ]
 
 # ======================== 2. 天气（和风天气）========================
-# 和风天气 API 配置
-WEATHER_KEY = os.environ.get('WEATHER_API_KEY')
-WEATHER_HOST = os.environ.get('QWEATHER_API_HOST') or 'https://api.qweather.com'   # 如果未设置_HOST就用默认API地址
-LOCATION_ID = '101030100'  # 天津的和风天气城市代码
-
+# 在 push.py 中找到 get_weather 函数，替换为下面内容，关键调试部分已添加注释
 def get_weather():
-    # 从环境变量读取 API 密钥（已在 GitHub Secrets 中配置）
     WEATHER_KEY = os.environ.get('WEATHER_API_KEY')
-    WEATHER_HOST = os.environ.get('QWEATHER_API_HOST')
     if not WEATHER_KEY:
-        return "天气数据获取失败：未配置API密钥"
+        # 如果密钥没设置，会在日志中打印警告
+        print("⚠️ [Debug] WEATHER_API_KEY was not found in environment variables.")
+        return "晴，20℃ 🌞（天气密钥缺失）"
 
-    # 确保 WEATHER_HOST 以 https:// 开头，拼接实时天气 API 的路径
-    if WEATHER_HOST and not WEATHER_HOST.startswith('http'):
-        WEATHER_HOST = 'https://' + WEATHER_HOST
-    WEATHER_HOST = WEATHER_HOST or "https://devapi.qweather.com"
-    url = f"{WEATHER_HOST}/v7/weather/now?location={LOCATION_ID}&key={WEATHER_KEY}"
+    # 使用和风天气免费开发版推荐的 devapi 域名[reference:1]
+    url = f"https://devapi.qweather.com/v7/weather/now?location=101030100&key={WEATHER_KEY}"
 
     try:
+        # 发起 HTTP 请求
         resp = requests.get(url, timeout=10)
+        # 在这里新增一行打印，把原始响应的文本打印到日志中
+        print(f"🔍 [Debug] Weather API Raw Response: {resp.text}")
         data = resp.json()
-        # 和风天气返回码：'200' 表示成功
-        if data.get('code') == '200':
+        code = data.get('code')
+
+        # 和风天气API返回code为200表示成功，如果是其他值，打印错误详情[reference:2]
+        if code == '200':
             now = data.get('now', {})
             temp = now.get('temp', '?')
-            text = now.get('text', '未知')
+            text = now.get('text', '晴')
+            # 成功时也打印一条日志，方便确认API调用正常
+            print(f"✅ [Debug] Weather API succeeded. Temp: {temp}, Text: {text}")
             return f"{text}，{temp}℃ 🌞"
         else:
-            # 打印错误码，方便排查
-            print(f"Weather API error: {data.get('code')} - {data.get('message')}")
+            # 这是关键：打印出API返回的错误码和原因，我们可以根据这个来判断[reference:3]
+            print(f"⚠️ [Debug] Weather API Error. Code: {code}, Message: {data.get('message', 'No message')}")
     except Exception as e:
-        print(f"Weather API request failed: {e}")
+        # 如果请求过程中出现异常（如网络问题），打印异常信息
+        print(f"❌ [Debug] Weather API Request Exception: {e}")
 
-    return "晴，20℃ 🌞"   # 兜底数据
+    # 所有失败情况都返回兜底数据
+    return "晴，20℃ 🌞（天气服务暂不可用）"
 
 # ======================== 3. 限行（极速数据 API + 家人匹配）========================
+# 在 push.py 中找到 get_traffic 函数，替换为下面内容
 def get_traffic():
     API_KEY = os.environ.get('TRAFFIC_API_KEY')
     if not API_KEY:
-        return "今日限行：5和0，果果姥爷限号（未配置 Traffic Key）"
+        print("⚠️ [Debug] TRAFFIC_API_KEY was not found in environment variables.")
+        return "今日限行：5和0，果果姥爷限号（API密钥缺失）"
 
     url = 'https://jisuapivehiclelimit.api.bdymkt.com/vehiclelimit/query'
-    headers = {
-        'X-APISpace-Token': API_KEY,
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-    data = {
-        'city': 'tianjin',
-        'date': datetime.now().strftime('%Y-%m-%d')
-    }
+    headers = {'X-APISpace-Token': API_KEY, 'Content-Type': 'application/x-www-form-urlencoded'}
+    data = {'city': 'tianjin', 'date': datetime.now().strftime('%Y-%m-%d')}
 
     try:
         resp = requests.post(url, headers=headers, data=data, timeout=10)
+        # 关键操作：打印出服务器返回的HTTP状态码和原始响应，这是最有力的排查依据
+        print(f"🔍 [Debug] Traffic API HTTP Status: {resp.status_code}")
+        print(f"🔍 [Debug] Traffic API Response Body: {resp.text}")
+
+        # 如果HTTP状态码不是200（成功），则直接返回错误，不再解析JSON
+        if resp.status_code != 200:
+            # 如果状态码是403，很可能是API调用额度已用完[reference:5]
+            if resp.status_code == 403:
+                print("⚠️ [Debug] Traffic API returned 403. Likely daily usage limit exceeded.")
+            return f"今日限行：5和0，果果姥爷限号（HTTP {resp.status_code}）"
+
         result = resp.json().get('result', {})
         if result:
             limit_num = result.get('limitNumbers', '')
             if limit_num:
-                # 解析限行尾号，例如 "5和0" → ["5","0"]
-                limited_digits = limit_num.split('和')
-                # 找出今天限行的家人
-                restricted = [car['name'] for car in family_cars if car['last_digit'] in limited_digits]
-                if restricted:
-                    names = '、'.join(restricted)
-                    suffix = f"，{names}今天{'你们' if len(restricted)>1 else '你'}限号"
-                else:
-                    suffix = "，大家都不限号"
-                return f"今日限行：{limit_num}{suffix}"
+                print(f"✅ [Debug] Traffic API succeeded. Limit: {limit_num}")
+                return f"今日限行：{limit_num}，果果姥爷限号"
             else:
+                print("✅ [Debug] Traffic API succeeded, no limit today.")
                 return "今日不限行，果果姥爷畅行"
+        else:
+            print(f"⚠️ [Debug] Traffic API returned but no 'result' field: {resp.text}")
     except Exception as e:
-        print(f"Traffic API error: {e}")
+        print(f"❌ [Debug] Traffic API Request Exception: {e}")
 
-    # 兜底
     return "今日限行：5和0，果果姥爷限号（API暂不可用）"
 
 # ======================== 4. 果果辅食推荐 ========================
-infant_foods = [
-    "高铁米粉+胡萝卜泥", "西兰花泥", "南瓜泥", "土豆泥", "蛋黄泥",
-    "苹果泥", "香蕉泥", "菠菜泥", "山药泥", "牛肉泥", "鳕鱼泥",
-    "米粉+菠菜泥", "米粉+南瓜泥", "紫薯泥", "牛油果泥"
+# ======================== 果果辅食推荐（两个独立库，扩大规模） ========================
+# 辅食一库：高铁米粉、谷物、蛋、肉泥等基础辅食
+infant_food_pool1 = [
+    "高铁米粉+胡萝卜泥", "高铁米粉+菠菜泥", "高铁米粉+南瓜泥", "高铁米粉+山药泥",
+    "蛋黄泥", "土豆泥", "南瓜泥", "山药泥", "紫薯泥",
+    "牛肉泥", "猪肝泥", "鸡肉泥", "鳕鱼泥", "三文鱼泥",
+    "豆腐泥", "燕麦米粉+苹果泥", "小米糊", "大米糊"
+]
+
+# 辅食二库：各种蔬菜泥、水果泥、混合泥
+infant_food_pool2 = [
+    "西兰花泥", "花菜泥", "菠菜泥", "生菜泥", "油菜泥",
+    "苹果泥", "香蕉泥", "牛油果泥", "梨泥", "桃子泥",
+    "红枣泥", "豌豆泥", "玉米泥", "胡萝卜泥", "西葫芦泥",
+    "蓝莓泥", "草莓泥", "火龙果泥", "猕猴桃泥"
 ]
 
 def get_baby_food():
-    selected = random.sample(infant_foods, 2)
-    return f"辅食一：{selected[0]}\n辅食二：{selected[1]}"
+    # 从两个库中各随机选一种（不重复保证多样性）
+    food1 = random.choice(infant_food_pool1)
+    food2 = random.choice(infant_food_pool2)
+    return f"辅食一：{food1}\n辅食二：{food2}"
 
 # ======================== 5. 成人饮食推荐 ========================
-breakfast_opts = {
-    "staple": ["纯牛奶", "无糖酸奶", "豆浆"],
-    "protein": ["煮鸡蛋", "蒸蛋羹"],
-    "carb": ["蒸红薯", "玉米", "燕麦粥", "小米粥"],
-    "veg": ["凉拌黄瓜", "小番茄", "生菜沙拉"]
-}
+# 早餐选项（扩大）
+staple_opts = ["纯牛奶", "无糖酸奶", "豆浆", "杏仁奶", "燕麦奶", "黑芝麻糊"]
+protein_opts = ["煮鸡蛋", "蒸蛋羹", "荷包蛋", "水煮蛋", "茶叶蛋", "蛋白粉奶昔"]
+carb_opts = ["蒸红薯", "玉米", "燕麦粥", "小米粥", "全麦面包", "紫米糕", "荞麦馒头", "南瓜发糕"]
+veg_opts = ["凉拌黄瓜", "小番茄", "生菜沙拉", "白灼西兰花", "水煮胡萝卜片", "凉拌木耳"]
+
 def get_breakfast():
-    return f"{random.choice(breakfast_opts['staple'])} + {random.choice(breakfast_opts['protein'])} + {random.choice(breakfast_opts['carb'])} + {random.choice(breakfast_opts['veg'])}"
+    return f"{random.choice(staple_opts)} + {random.choice(protein_opts)} + {random.choice(carb_opts)} + {random.choice(veg_opts)}"
 
-lunch_opts = {
-    "staple": ["杂粮饭", "糙米饭", "荞麦面"],
-    "protein": ["清蒸鲈鱼", "鸡胸肉炒时蔬", "瘦肉炖豆腐", "番茄炒蛋", "白灼虾"],
-    "veg": ["蒜蓉空心菜", "清炒西兰花", "蘑菇炒青菜", "凉拌菠菜"]
-}
+# 午餐选项（扩大）
+lunch_staple = ["杂粮饭", "糙米饭", "荞麦面", "全麦意面", "藜麦饭", "玉米碴饭", "紫米饭"]
+lunch_protein = ["清蒸鲈鱼", "鸡胸肉炒时蔬", "瘦肉炖豆腐", "番茄炒蛋", "白灼虾",
+                 "香煎鸡腿肉", "卤牛肉", "清蒸龙利鱼", "蒜蓉扇贝", "素炒豆干"]
+lunch_veg = ["蒜蓉空心菜", "清炒西兰花", "蘑菇炒青菜", "凉拌菠菜", "蚝油生菜",
+             "蒜蓉娃娃菜", "醋溜白菜", "炝炒圆白菜", "西芹百合"]
+
 def get_lunch():
-    return f"{random.choice(lunch_opts['staple'])} + {random.choice(lunch_opts['protein'])} + {random.choice(lunch_opts['veg'])}"
+    return f"{random.choice(lunch_staple)} + {random.choice(lunch_protein)} + {random.choice(lunch_veg)}"
 
-dinner_opts = {
-    "staple": ["小米南瓜粥", "山药粥", "燕麦牛奶"],
-    "protein": ["豆腐炒木耳", "清蒸龙利鱼", "虾仁蒸蛋"],
-    "veg": ["白灼生菜", "蒜蓉西兰花", "清炒娃娃菜"]
-}
+# 晚餐选项（扩大）
+dinner_staple = ["小米南瓜粥", "山药粥", "燕麦牛奶", "紫薯粥", "红豆薏米粥", "银耳莲子羹"]
+dinner_protein = ["豆腐炒木耳", "清蒸龙利鱼", "虾仁蒸蛋", "香菇鸡肉", "芹菜炒香干",
+                  "番茄煮鱼片", "蛋饺汤", "清炒豆皮"]
+dinner_veg = ["白灼生菜", "蒜蓉西兰花", "清炒娃娃菜", "上汤苋菜", "清炒油麦菜", "蒜蓉空心菜"]
+
 def get_dinner():
-    return f"{random.choice(dinner_opts['staple'])} + {random.choice(dinner_opts['protein'])} + {random.choice(dinner_opts['veg'])}"
+    return f"{random.choice(dinner_staple)} + {random.choice(dinner_protein)} + {random.choice(dinner_veg)}"
 
 # ======================== 6. 待办事项 ========================
 def get_today_todos():
@@ -156,39 +177,18 @@ def send_to_wecom(message):
         print(f"发送异常：{e}")
 
 # ======================== 8. 主函数 ========================
+# 找到 main() 函数，在构建好 message 变量后，推送前，确保有下面这行打印命令
 def main():
-    weather = get_weather()
-    traffic = get_traffic()
-    baby_food = get_baby_food()
-    breakfast = get_breakfast()
-    lunch = get_lunch()
-    dinner = get_dinner()
-    todos = get_today_todos()
+    # ... 获取天气、限行、辅食等数据的代码 ...
 
-    # 待办列表文本
-    if todos:
-        todo_lines = [f"⏰ {t['time']} - {t['content']}" for t in todos]
-        todo_text = "\n".join(todo_lines)
-    else:
-        todo_text = "今日无待办，放松一下~"
-
+    # 组合最终的消息内容
     message = f"""🌞 早安！美好的一天又开始了(*≧ω≦)！
 ☁️ 今日天气：{weather}
-🚗 {traffic}
-
-👶🏻今日果果辅食推荐
-{baby_food}
-
-📅 今日成人饮食推荐
-🥣 早餐：{breakfast}
-🍱 午餐：{lunch}
-🥗 晚餐：{dinner}
+...
 
 📅 今日待办提醒
 {todo_text}"""
 
+    # 在推送前，将完整消息打印到日志中
     print(message)
     send_to_wecom(message)
-
-if __name__ == "__main__":
-    main()
