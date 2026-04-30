@@ -1,20 +1,44 @@
 [
     {
-        "date": "2026-04-30",
-        "time": "10:00",
-        "content": "出去买菜",
+        "date": "2026-05-01",
+        "time": "9:00",
+        "content": "起床买老豆腐",
         "done": false
     },
     {
-        "date": "2026-04-30",
+        "date": "everyday",
         "time": "14:00",
-        "content": "陪猪猪打疫苗",
+        "content": "退换无印良品衣服",
         "done": false
     },
+    {
+        "date": "everyday",
+        "time": "无",
+        "content": "5月4日果果姥爷生日",
+        "done": false
+    } {
+        "date": "everyday",
+        "time": "14:00",
+        "content": "果果妈妈汽车保养",
+        "done": false
+    },
+
+    {
+        "date": "everyday",
+        "time": "无",
+        "content": "6月10日带果果打疫苗",
+        "done": false
+    }
+    {
+        "date": "monthly:20",
+        "time": "无",
+        "content": "缴纳电费、煤气费",
+        "done": false
+    }
     {
         "date": "2026-05-01",
-        "time": "09:30",
-        "content": "带果果体检",
+        "time": "无",
+        "content": "果果姥爷生日",
         "done": false
     }
 ]
