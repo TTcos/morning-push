@@ -1,0 +1,24 @@
+name: Daily Morning Push
+
+on:
+  schedule:
+    - cron: '30 23 * * *'   # 北京时间 07:30
+  workflow_dispatch:
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Run push script
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          TRAFFIC_API_KEY: ${{ secrets.TRAFFIC_API_KEY }}
+          WECHAT_WEBHOOK: ${{ secrets.WECHAT_WEBHOOK }}
+        run: python push.py
