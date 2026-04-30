@@ -47,38 +47,57 @@ def get_weather():
 
     return "晴，20℃ 🌞（天气服务暂不可用）"
 
-# ======================== 3. 限行（极速数据）========================
-def get_traffic():
-    API_KEY = os.environ.get('TRAFFIC_API_KEY')
-    if not API_KEY:
-        print("⚠️ [Debug] TRAFFIC_API_KEY not found.")
-        return "今日限行：5和0，果果姥爷限号（API密钥缺失）"
+# ======================== 3. 限行（自动按日期轮换）========================
+# 天津限行规则：
+# - 工作日（周一至周五）限行，周末不限
+# - 每 13 周（91 天）轮换一次限行尾号组合
+# - 基准起始周期：2026年3月30日（周一） => 周一 2&7，周二 3&8，周三 4&9，周四 5&0，周五 1&6
+# - 下一周期整体后移一位（即周一 1&6，周二 2&7，……）
+# - 共有 5 种组合，每 5 个周期后重复
 
-    url = 'https://jisuapivehiclelimit.api.bdymkt.com/vehiclelimit/query'
-    headers = {'X-APISpace-Token': API_KEY, 'Content-Type': 'application/x-www-form-urlencoded'}
-    data = {'city': 'tianjin', 'date': datetime.now().strftime('%Y-%m-%d')}
-    try:
-        resp = requests.post(url, headers=headers, data=data, timeout=10)
-        print(f"🔍 [Debug] Traffic API HTTP Status: {resp.status_code}")
-        print(f"🔍 [Debug] Traffic API Response Body: {resp.text}")
-        if resp.status_code != 200:
-            if resp.status_code == 403:
-                print("⚠️ [Debug] Traffic API returned 403. Likely usage limit exceeded.")
-            return f"今日限行：5和0，果果姥爷限号（HTTP {resp.status_code}）"
-        result = resp.json().get('result', {})
-        if result:
-            limit_num = result.get('limitNumbers', '')
-            if limit_num:
-                print(f"✅ [Debug] Traffic API succeeded. Limit: {limit_num}")
-                return f"今日限行：{limit_num}，果果姥爷限号"
-            else:
-                print("✅ [Debug] Traffic API succeeded, no limit today.")
-                return "今日不限行，果果姥爷畅行"
-        else:
-            print(f"⚠️ [Debug] Traffic API no 'result' field: {resp.text}")
-    except Exception as e:
-        print(f"❌ [Debug] Traffic API Exception: {e}")
-    return "今日限行：5和0，果果姥爷限号（API暂不可用）"
+def get_traffic():
+    from datetime import datetime, timedelta
+
+    today = datetime.now().date()
+    # 周末不限行
+    if today.weekday() >= 5:  # 5=周六, 6=周日
+        return "今日不限行，周末愉快！"
+
+    # 基准日期：2026年3月30日（周一），该周期索引为0
+    base_date = datetime(2026, 3, 30).date()
+
+    # 计算从基准到现在的天数，确定周期索引（每个周期91天）
+    delta_days = (today - base_date).days
+    if delta_days < 0:
+        # 如果日期早于基准，返回默认（但实际上我们只需要未来）
+        return "今日限行：5和0（规则暂未制定）"
+
+    cycle_index = delta_days // 91  # 当前是第几个周期（从0开始）
+    shift = cycle_index % 5         # 偏移量（0~4）
+
+    # 5种限行组合（周一到周五的顺序）
+    # 每个元素是 tuple: (周一尾号, 周二尾号, 周三尾号, 周四尾号, 周五尾号)
+    # 尾号格式如 "2和7"
+    combinations = [
+        ("2和7", "3和8", "4和9", "5和0", "1和6"),  # 偏移0
+        ("1和6", "2和7", "3和8", "4和9", "5和0"),  # 偏移1
+        ("5和0", "1和6", "2和7", "3和8", "4和9"),  # 偏移2
+        ("4和9", "5和0", "1和6", "2和7", "3和8"),  # 偏移3
+        ("3和8", "4和9", "5和0", "1和6", "2和7"),  # 偏移4
+    ]
+
+    weekday_idx = today.weekday()  # 周一=0, 周五=4
+    limit_num = combinations[shift][weekday_idx]
+
+    # 判断家庭成员的限行情况
+    limited_digits = limit_num.split('和')
+    restricted = [car['name'] for car in family_cars if car['last_digit'] in limited_digits]
+    if restricted:
+        names = '、'.join(restricted)
+        suffix = f"，{names}今天{'你们' if len(restricted)>1 else '你'}限号"
+    else:
+        suffix = "，大家都不限号"
+    return f"今日限行：{limit_num}{suffix}"
 
 # ======================== 4. 果果辅食推荐 ========================
 infant_food_pool1 = [
