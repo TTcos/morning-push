@@ -18,11 +18,17 @@ family_cars = [
 # ======================== 2. 天气（和风天气）========================
 def get_weather():
     WEATHER_KEY = os.environ.get('WEATHER_API_KEY')
+    API_HOST = os.environ.get('QWEATHER_API_HOST')   # 新增：读取专属 API Host
+
     if not WEATHER_KEY:
         print("⚠️ [Debug] WEATHER_API_KEY was not found.")
         return "晴，20℃ 🌞（天气密钥缺失）"
+    if not API_HOST:
+        print("⚠️ [Debug] QWEATHER_API_HOST was not found.")
+        return "晴，20℃ 🌞（API Host缺失）"
 
-    url = f"https://devapi.qweather.com/v7/weather/now?location=101030100&key={WEATHER_KEY}"
+    # 注意：API_HOST 本身不要包含 https:// 前缀，代码会自动加上
+    url = f"https://{API_HOST}/v7/weather/now?location=101030100&key={WEATHER_KEY}"
     try:
         resp = requests.get(url, timeout=10)
         print(f"🔍 [Debug] Weather API Raw Response: {resp.text}")
@@ -38,6 +44,7 @@ def get_weather():
             print(f"⚠️ [Debug] Weather API Error. Code: {code}, Msg: {data.get('message', '')}")
     except Exception as e:
         print(f"❌ [Debug] Weather API Exception: {e}")
+
     return "晴，20℃ 🌞（天气服务暂不可用）"
 
 # ======================== 3. 限行（极速数据）========================
