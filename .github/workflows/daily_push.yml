@@ -19,6 +19,7 @@ jobs:
       - name: Run push script
         env:
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          QWEATHER_API_HOST: ${{ secrets.QWEATHER_API_HOST }}
           TRAFFIC_API_KEY: ${{ secrets.TRAFFIC_API_KEY }}
           WECHAT_WEBHOOK: ${{ secrets.WECHAT_WEBHOOK }}
         run: python push.py
