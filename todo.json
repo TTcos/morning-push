@@ -16,25 +16,25 @@
         "time": "无",
         "content": "5月4日果果姥爷生日",
         "done": false
-    } {
+    },
+    {
         "date": "everyday",
         "time": "14:00",
         "content": "果果妈妈汽车保养",
         "done": false
     },
-
     {
         "date": "everyday",
         "time": "无",
         "content": "6月10日带果果打疫苗",
         "done": false
-    }
+    },
     {
         "date": "monthly:20",
         "time": "无",
         "content": "缴纳电费、煤气费",
         "done": false
-    }
+    },
     {
         "date": "2026-05-01",
         "time": "无",
