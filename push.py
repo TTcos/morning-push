@@ -7,6 +7,13 @@ import os
 import random
 from datetime import datetime
 
+# 宝宝出生日期（年,月,日）—— 请修改为你家宝宝的实际生日
+BIRTH_DATE = datetime(2025, 12, 10)   # 示例：2026年1月1日
+
+# 倒计时配置：目标日期（年,月,日）和事件描述
+COUNTDOWN_DATE = datetime(2026, 6, 10)   # 例如：国庆节
+COUNTDOWN_EVENT = "带果果打疫苗"
+
 # ======================== 1. 家人车辆配置（限行判断）========================
 family_cars = [
     {"name": "果果姥爷", "last_digit": "6"},
@@ -135,6 +142,40 @@ def get_traffic():
     else:
         suffix = "，大家都不限号"
     return f"今日限行：{limit_num}{suffix}"
+
+    # 添加年龄显示函数
+def get_baby_age_display():
+    """
+    计算宝宝从出生到今天的天数，并格式化为“X月X天”。
+    以30天为一个月，天数 = 总天数 - 月数*30。
+    """
+    today = datetime.now().date()
+    birth = BIRTH_DATE.date()
+    delta = (today - birth).days
+    if delta < 0:
+        return "宝宝还未出生🎈"
+    months = delta // 30
+    days = delta % 30
+    # 处理整月情况（比如 1个月0天 显示为 1个月）
+    if days == 0:
+        return f"宝宝今天{months}个月啦🎉"
+    else:
+        return f"宝宝今天{months}个月零{days}天"
+
+    def get_countdown():
+        """
+        计算距离目标日期的天数，并返回格式化的字符串。
+        如果已过期，返回“已过去X天”。
+        """
+        today = datetime.now().date()
+        target = COUNTDOWN_DATE.date()
+        delta = (target - today).days
+        if delta > 0:
+            return f"距离{COUNTDOWN_EVENT}还有{delta}天"
+        elif delta == 0:
+            return f"今天是{COUNTDOWN_EVENT}！🎉"
+        else:
+            return f"{COUNTDOWN_EVENT}已过去{-delta}天"
 
 # ======================== 4. 果果辅食推荐 ========================
 infant_food_pool1 = [
@@ -280,6 +321,8 @@ def main():
     message = f"""🌞 早安！美好的一天又开始了(*≧ω≦)！
 ☁️ 今日天气：{weather}
 🚗 {traffic}
+👶🏻 {baby_age}
+📅 {countdown_msg}
 
 👶🏻今日果果辅食推荐
 {baby_food}
