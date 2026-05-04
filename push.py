@@ -10,9 +10,12 @@ from datetime import datetime
 # 宝宝出生日期（年,月,日）—— 请修改为你家宝宝的实际生日
 BIRTH_DATE = datetime(2025, 12, 10)   # 示例：2025年12月10日
 
-# 倒计时配置：目标日期（年,月,日）和事件描述
-COUNTDOWN_DATE = datetime(2026, 6, 10)   # 例如：带果果打疫苗
-COUNTDOWN_EVENT = "带果果打疫苗"
+# 倒计时配置：列表内每个元素为 (目标日期, 事件描述)
+COUNTDOWNS = [
+    (datetime(2026, 6, 10), "带果果打疫苗"),
+    (datetime(2026, 8, 29), "注册会计师考试"),
+    # 可以继续添加
+]
 
 # ======================== 1. 家人车辆配置（限行判断）========================
 family_cars = [
@@ -145,14 +148,17 @@ def get_baby_age_display():
 # ---------- 5. 倒计时 ----------
 def get_countdown():
     today = datetime.now().date()
-    target = COUNTDOWN_DATE.date()
-    delta = (target - today).days
-    if delta > 0:
-        return f"距离{COUNTDOWN_EVENT}还有{delta}天"
-    elif delta == 0:
-        return f"今天是{COUNTDOWN_EVENT}！🎉"
-    else:
-        return f"{COUNTDOWN_EVENT}已过去{-delta}天"
+    lines = []
+    for target_date, event in COUNTDOWNS:
+        target = target_date.date()
+        delta = (target - today).days
+        if delta > 0:
+            lines.append(f"距离{event}还有{delta}天")
+        elif delta == 0:
+            lines.append(f"今天是{event}！🎉")
+        else:
+            lines.append(f"{event}已过去{-delta}天")
+    return "\n".join(lines)   # 返回多行文本
 
 # ======================== 6. 果果辅食推荐 ========================
 infant_food_pool1 = [
