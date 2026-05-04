@@ -143,7 +143,7 @@ def get_traffic():
         suffix = "，大家都不限号"
     return f"今日限行：{limit_num}{suffix}"
 
-    # 添加年龄显示函数
+    # ---------- 4. 宝宝年龄 ----------
 def get_baby_age_display():
     """
     计算宝宝从出生到今天的天数，并格式化为“X月X天”。
@@ -161,6 +161,8 @@ def get_baby_age_display():
         return f"宝宝今天{months}个月啦🎉"
     else:
         return f"宝宝今天{months}个月零{days}天"
+
+    # ---------- 5. 倒计时 ----------
 
     def get_countdown():
         """
@@ -306,6 +308,8 @@ def send_to_wecom(message):
 def main():
     weather = get_weather()
     traffic = get_traffic()
+    baby_age = get_baby_age_display()
+    countdown_msg = get_countdown()
     baby_food = get_baby_food()
     breakfast = get_breakfast()
     lunch = get_lunch()
