@@ -1,17 +1,5 @@
 [
-    {
-        "date": "2026-05-01",
-        "time": "9:00",
-        "content": "起床买老豆腐",
-        "done": false
-    },
-    {
-        "date": "everyday",
-        "time": "无",
-        "content": "5月4日果果姥爷生日",
-        "done": false
-    },
-    {
+      {
         "date": "everyday",
         "time": "14:00",
         "content": "果果妈妈汽车保养",
@@ -30,9 +18,9 @@
         "done": false
     },
     {
-        "date": "2026-05-01",
+        "date": "2027-04-20",
         "time": "无",
-        "content": "果果姥爷生日",
+        "content": "4月24果果姥爷生日",
         "done": false
     }
 ]
