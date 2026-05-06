@@ -26,7 +26,7 @@ family_cars = [
     {"name": "果果奶奶", "last_digit": "0"},
 ]
 
-# ======================== 2. 天气（和风天气，辅助）========================
+# ======================== 2. 天气（和风天气，简化版）========================
 
 def get_daily_forecast(location, key, host):
     """获取未来3天天气预报，提取当天最高和最低温度"""
@@ -48,8 +48,9 @@ def get_daily_forecast(location, key, host):
 
 def get_clothing_advice(temp_min, temp_max):
     """根据温度推荐穿着"""
-    avg_temp = (float(temp_min) + float(temp_max)) / 2 if temp_min != 'N/A' and temp_max != 'N/A' else None
-    if avg_temp is None:
+    try:
+        avg_temp = (float(temp_min) + float(temp_max)) / 2
+    except:
         return "注意天气变化"
     if avg_temp < 5:
         return "羽绒服、厚棉衣"
@@ -65,8 +66,6 @@ def get_clothing_advice(temp_min, temp_max):
         return "短袖、连衣裙"
     else:
         return "短袖、防晒衣"
-
-# ======================== 2. 天气（和风天气）========================
 
 def get_weather():
     WEATHER_KEY = os.environ.get('WEATHER_API_KEY')
@@ -89,50 +88,25 @@ def get_weather():
                 temp = now.get('temp', '?')
                 text = now.get('text', '晴')
                 weather_base = f"{text}，{temp}℃"
+                temp_min = temp_max = temp
             else:
                 weather_base = "天气数据暂不可用"
+                temp_min = temp_max = 'N/A'
         except:
             weather_base = "天气数据获取失败"
-        temp_min = temp_max = 'N/A'
+            temp_min = temp_max = 'N/A'
     else:
         weather_base = f"{text_day}，{temp_min}-{temp_max}℃"
 
-    # 2. 获取空气质量
-    pm25, pm10, air_cat = get_air_quality(location, WEATHER_KEY, API_HOST)
-    if pm25 != 'N/A' and pm10 != 'N/A':
-        air_text = f"PM2.5 {pm25}，PM10 {pm10}，空气质量{air_cat}"
-        # 判断是否适合室外活动（优良可室外，轻度污染以上建议减少户外）
-        if air_cat in ['优', '良']:
-            outdoor = "适合室外活动"
-        else:
-            outdoor = "建议减少户外活动"
-    else:
-        air_text = "空气质量暂无法获取"
-        outdoor = "请关注天气变化"
-
-    # 3. 获取紫外线
-    uv_level, uv_advice = get_uv_index(location, WEATHER_KEY, API_HOST)
-    if uv_level != 'N/A':
-        uv_text = f"紫外线指数 {uv_level} 级，{uv_advice}"
-    else:
-        uv_text = "紫外线信息暂不可用"
-
-    # 4. 穿衣推荐
+    # 2. 穿衣推荐
     if temp_min != 'N/A' and temp_max != 'N/A':
         clothing = get_clothing_advice(temp_min, temp_max)
-        clothing_text = f"推荐穿着{clothing}"
+        clothing_text = f"，推荐穿着{clothing}"
     else:
         clothing_text = ""
 
-    # 组装最终消息
-    parts = [weather_base]
-    if clothing_text:
-        parts.append(clothing_text)
-    parts.append(air_text)
-    parts.append(outdoor)
-    parts.append(uv_text)
-
-    return "，".join(parts)
+    # 组装最终消息（不包含空气质量、紫外线）
+    return weather_base + clothing_text
 
 # ======================== 3. 限行（自动轮换 + 节假日/调休）========================
 holidays_2026 = [
