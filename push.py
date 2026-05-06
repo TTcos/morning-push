@@ -26,38 +26,6 @@ family_cars = [
     {"name": "果果奶奶", "last_digit": "0"},
 ]
 
-def get_air_quality(location, key, host):
-    """获取空气质量（PM2.5, PM10）"""
-    url = f"https://{host}/v7/air/now?location={location}&key={key}"
-    try:
-        resp = requests.get(url, timeout=10)
-        data = resp.json()
-        if data.get('code') == '200':
-            air = data.get('now', {})
-            pm25 = air.get('pm2p5', 'N/A')
-            pm10 = air.get('pm10', 'N/A')
-            category = air.get('category', '未知')
-            return pm25, pm10, category
-    except Exception as e:
-        print(f"空气质量API异常: {e}")
-    return 'N/A', 'N/A', '未知'
-
-def get_uv_index(location, key, host):
-    """获取紫外线指数"""
-    url = f"https://{host}/v7/indices/1d?location={location}&type=4&key={key}"
-    try:
-        resp = requests.get(url, timeout=10)
-        data = resp.json()
-        if data.get('code') == '200':
-            indices = data.get('daily', [])
-            if indices:
-                level = indices[0].get('level', 'N/A')
-                advice = indices[0].get('advice', '')
-                return level, advice
-    except Exception as e:
-        print(f"紫外线API异常: {e}")
-    return 'N/A', ''
-
 # ======================== 2. 天气（和风天气，辅助）========================
 
 def get_daily_forecast(location, key, host):
