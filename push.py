@@ -205,11 +205,11 @@ def get_countdown():
         target = target_date.date()
         delta = (target - today).days
         if delta > 0:
-            lines.append(f"距离{event}还有{delta}天")
+            lines.append(f"📌距离{event}还有{delta}天")
         elif delta == 0:
             lines.append(f"今天是{event}！🎉")
         else:
-            lines.append(f"{event}已过去{-delta}天")
+            lines.append(f"✅{event}已过去{-delta}天")
     return "\n".join(lines)   # 返回多行文本
 
 # ======================== 6. 果果辅食推荐 ========================
