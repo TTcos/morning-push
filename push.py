@@ -189,13 +189,13 @@ def get_baby_age_display():
     birth = BIRTH_DATE.date()
     delta = (today - birth).days
     if delta < 0:
-        return "宝宝还未出生🎈"
+        return "果果还未出生🎈"
     months = delta // 30
     days = delta % 30
     if days == 0:
-        return f"宝宝今天{months}个月啦🎉"
+        return f"果果今天{months}个月啦🎉"
     else:
-        return f"宝宝今天{months}个月零{days}天"
+        return f"果果今天{months}个月零{days}天"
 
 # ---------- 5. 倒计时 ----------
 def get_countdown():
