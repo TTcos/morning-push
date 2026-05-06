@@ -16,6 +16,7 @@
         "time": "无",
         "content": "🪟擦窗户",
         "done": false
+    },
     {
         "date": "everyday",
         "time": "无",
@@ -25,7 +26,7 @@
     {
         "date": "everyday",
         "time": "无",
-        "content": "💉6月10日带果果打疫苗",
+        "content": "💉6月10日带果果打疫苗、6月龄体检",
         "done": false
     },
     {
@@ -44,6 +45,12 @@
         "date": "weekly:5",
         "time": "无",
         "content": "🧹今日大扫除",
+        "done": false
+    },
+    {
+        "date": "weekly:5",
+        "time": "无",
+        "content": "🌼该浇花了",
         "done": false
     },
     {
