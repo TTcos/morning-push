@@ -14,6 +14,7 @@ BIRTH_DATE = datetime(2025, 12, 10)   # 示例：2025年12月10日
 COUNTDOWNS = [
     (datetime(2026, 6, 10), "带果果打疫苗"),
     (datetime(2026, 8, 29), "注册会计师考试"),
+    (datetime(2026, 9, 15), "法律职业资格考试"),
     # 可以继续添加
 ]
 
@@ -25,36 +26,145 @@ family_cars = [
     {"name": "果果奶奶", "last_digit": "0"},
 ]
 
+def get_air_quality(location, key, host):
+    """获取空气质量（PM2.5, PM10）"""
+    url = f"https://{host}/v7/air/now?location={location}&key={key}"
+    try:
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        if data.get('code') == '200':
+            air = data.get('now', {})
+            pm25 = air.get('pm2p5', 'N/A')
+            pm10 = air.get('pm10', 'N/A')
+            category = air.get('category', '未知')
+            return pm25, pm10, category
+    except Exception as e:
+        print(f"空气质量API异常: {e}")
+    return 'N/A', 'N/A', '未知'
+
+def get_uv_index(location, key, host):
+    """获取紫外线指数"""
+    url = f"https://{host}/v7/indices/1d?location={location}&type=4&key={key}"
+    try:
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        if data.get('code') == '200':
+            indices = data.get('daily', [])
+            if indices:
+                level = indices[0].get('level', 'N/A')
+                advice = indices[0].get('advice', '')
+                return level, advice
+    except Exception as e:
+        print(f"紫外线API异常: {e}")
+    return 'N/A', ''
+
+# ======================== 2. 天气（和风天气，辅助）========================
+
+def get_daily_forecast(location, key, host):
+    """获取未来3天天气预报，提取当天最高和最低温度"""
+    url = f"https://{host}/v7/weather/3d?location={location}&key={key}"
+    try:
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        if data.get('code') == '200':
+            forecasts = data.get('daily', [])
+            if forecasts:
+                today = forecasts[0]
+                temp_max = today.get('tempMax', 'N/A')
+                temp_min = today.get('tempMin', 'N/A')
+                text_day = today.get('textDay', '')
+                return text_day, temp_min, temp_max
+    except Exception as e:
+        print(f"天气预报API异常: {e}")
+    return None, None, None
+
+def get_clothing_advice(temp_min, temp_max):
+    """根据温度推荐穿着"""
+    avg_temp = (float(temp_min) + float(temp_max)) / 2 if temp_min != 'N/A' and temp_max != 'N/A' else None
+    if avg_temp is None:
+        return "注意天气变化"
+    if avg_temp < 5:
+        return "羽绒服、厚棉衣"
+    elif avg_temp < 10:
+        return "大衣、薄羽绒服"
+    elif avg_temp < 15:
+        return "风衣、毛衣"
+    elif avg_temp < 20:
+        return "夹克、薄外套"
+    elif avg_temp < 25:
+        return "长袖T恤、薄开衫"
+    elif avg_temp < 30:
+        return "短袖、连衣裙"
+    else:
+        return "短袖、防晒衣"
+
 # ======================== 2. 天气（和风天气）========================
+
 def get_weather():
     WEATHER_KEY = os.environ.get('WEATHER_API_KEY')
     API_HOST = os.environ.get('QWEATHER_API_HOST')
+    if not WEATHER_KEY or not API_HOST:
+        return "天气数据获取失败（密钥或Host缺失）"
 
-    if not WEATHER_KEY:
-        print("⚠️ [Debug] WEATHER_API_KEY was not found.")
-        return "晴，20℃ 🌞（天气密钥缺失）"
-    if not API_HOST:
-        print("⚠️ [Debug] QWEATHER_API_HOST was not found.")
-        return "晴，20℃ 🌞（API Host缺失）"
+    location = "101030100"  # 天津
 
-    url = f"https://{API_HOST}/v7/weather/now?location=101030100&key={WEATHER_KEY}"
-    try:
-        resp = requests.get(url, timeout=10)
-        print(f"🔍 [Debug] Weather API Raw Response: {resp.text}")
-        data = resp.json()
-        code = data.get('code')
-        if code == '200':
-            now = data.get('now', {})
-            temp = now.get('temp', '?')
-            text = now.get('text', '晴')
-            print(f"✅ [Debug] Weather succeeded. Temp: {temp}, Text: {text}")
-            return f"{text}，{temp}℃ 🌞"
+    # 1. 获取当天天气预报（最高最低温、天气现象）
+    text_day, temp_min, temp_max = get_daily_forecast(location, WEATHER_KEY, API_HOST)
+    if text_day is None:
+        # 降级：只获取实时天气
+        url = f"https://{API_HOST}/v7/weather/now?location={location}&key={WEATHER_KEY}"
+        try:
+            resp = requests.get(url, timeout=10)
+            data = resp.json()
+            if data.get('code') == '200':
+                now = data.get('now', {})
+                temp = now.get('temp', '?')
+                text = now.get('text', '晴')
+                weather_base = f"{text}，{temp}℃"
+            else:
+                weather_base = "天气数据暂不可用"
+        except:
+            weather_base = "天气数据获取失败"
+        temp_min = temp_max = 'N/A'
+    else:
+        weather_base = f"{text_day}，{temp_min}-{temp_max}℃"
+
+    # 2. 获取空气质量
+    pm25, pm10, air_cat = get_air_quality(location, WEATHER_KEY, API_HOST)
+    if pm25 != 'N/A' and pm10 != 'N/A':
+        air_text = f"PM2.5 {pm25}，PM10 {pm10}，空气质量{air_cat}"
+        # 判断是否适合室外活动（优良可室外，轻度污染以上建议减少户外）
+        if air_cat in ['优', '良']:
+            outdoor = "适合室外活动"
         else:
-            print(f"⚠️ [Debug] Weather API Error. Code: {code}, Msg: {data.get('message', '')}")
-    except Exception as e:
-        print(f"❌ [Debug] Weather API Exception: {e}")
+            outdoor = "建议减少户外活动"
+    else:
+        air_text = "空气质量暂无法获取"
+        outdoor = "请关注天气变化"
 
-    return "晴，20℃ 🌞（天气服务暂不可用）"
+    # 3. 获取紫外线
+    uv_level, uv_advice = get_uv_index(location, WEATHER_KEY, API_HOST)
+    if uv_level != 'N/A':
+        uv_text = f"紫外线指数 {uv_level} 级，{uv_advice}"
+    else:
+        uv_text = "紫外线信息暂不可用"
+
+    # 4. 穿衣推荐
+    if temp_min != 'N/A' and temp_max != 'N/A':
+        clothing = get_clothing_advice(temp_min, temp_max)
+        clothing_text = f"推荐穿着{clothing}"
+    else:
+        clothing_text = ""
+
+    # 组装最终消息
+    parts = [weather_base]
+    if clothing_text:
+        parts.append(clothing_text)
+    parts.append(air_text)
+    parts.append(outdoor)
+    parts.append(uv_text)
+
+    return "，".join(parts)
 
 # ======================== 3. 限行（自动轮换 + 节假日/调休）========================
 holidays_2026 = [
