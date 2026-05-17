@@ -2,31 +2,13 @@
       {
         "date": "everyday",
         "time": "无",
-        "content": "🚗果果妈妈汽车保养",
+        "content": "❄️记得带冰袋、带背奶包、带通勤包",
         "done": false
     },
     {
         "date": "everyday",
-        "time": "无",
-        "content": "🧼清洗空调",
-        "done": false
-    },
-    {
-        "date": "everyday",
-        "time": "无",
-        "content": "🪟擦窗户",
-        "done": false
-    },
-    {
-        "date": "everyday",
-        "time": "无",
-        "content": "👟鞋子送洗",
-        "done": false
-    },
-    {
-        "date": "everyday",
-        "time": "无",
-        "content": "💉6月10日带果果打疫苗、6月龄体检",
+        "time": "6月10日",
+        "content": "💉带果果打疫苗、6月龄体检、拍X光、开始添加辅食",
         "done": false
     },
     {
@@ -54,21 +36,21 @@
         "done": false
     },
     {
-        "date": "weekly:5",
-        "time": "无",
-        "content": "🌼该浇花了",
-        "done": false
-    },
-    {
         "date": "2026-10-10",
         "time": "无",
-        "content": "🌼该浇花了",
+        "content": "🎂10月19日果果爸爸生日",
         "done": false
     },
     {
         "date": "2026-09-18",
         "time": "无",
         "content": "🍂整理换季衣物鞋靴",
+        "done": false
+    },
+    {
+        "date": "2026-06-23",
+        "time": "无",
+        "content": "🎂小杨生日",
         "done": false
     },
     {
